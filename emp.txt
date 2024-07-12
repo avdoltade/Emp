@@ -1,0 +1,206 @@
+package com.app.empController;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.model.Employee;
+import com.app.services.EmployeeService;
+
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+
+
+@RestController
+public class EmpController {
+	
+	@Autowired
+	 EmployeeService employeeService;
+	
+	//display all
+	@GetMapping("employee")
+	public List<Employee> getAllEmployee() {
+		return employeeService.readEmployees();
+	}
+	
+	@PostMapping("employee")
+	public String createEmployee(@RequestBody Employee employee) {
+		return employeeService.createEmployee(employee);
+	}
+	
+	
+	@DeleteMapping("employee/{id}")
+	public String deleteEmployee(@PathVariable Long id) {
+		if(employeeService.deleteEmployee(id))
+			return "Delete Successfully";
+		return "Not Found";
+	}
+	
+	
+	//fro updating
+	@PutMapping("employee/{id}")
+	public String updateEmployee(@PathVariable Long id, @RequestBody Employee employee) {
+		return employeeService.updateEmployee(id, employee);
+	}
+	
+	
+	//display emp by id
+	@GetMapping("employee/{id}")
+	public Employee getEmployeeById(@PathVariable Long id) {
+		return employeeService.readEmployee(id);
+	}
+		
+}
+
+
+
+//empservice
+package com.app.services;
+
+import java.util.List;
+
+import com.app.model.Employee;
+
+
+public interface EmployeeService {
+
+	//insert in to employee table
+String createEmployee(Employee employee);
+
+//display all employee
+List<Employee> readEmployees();
+
+//delete by id
+boolean deleteEmployee(Long id);
+
+//update emp by id
+String updateEmployee(Long id, Employee employee);
+
+//display data by id
+Employee readEmployee(Long id);
+}
+
+
+
+
+//service implementation
+package com.app.services;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.app.entity.EmployeeEntity;
+import com.app.model.Employee;
+import com.app.repository.EmployeeRepository;
+
+@Service
+public class EmployeeServiceImpl implements EmployeeService {
+
+	@Autowired
+	private EmployeeRepository employeeRepository;
+	
+	
+	//add emp
+	@Override
+	public String createEmployee(Employee employee) {
+		EmployeeEntity employeeEntity=new EmployeeEntity();
+		BeanUtils.copyProperties(employee, employeeEntity);
+		employeeRepository.save(employeeEntity);
+		return "Save Successfully";
+	}
+
+	//display all employee
+	@Override
+	public List<Employee> readEmployees() {
+		List<EmployeeEntity> employeeList=new ArrayList<>();
+		List<Employee> employee=new ArrayList<>();
+		for (EmployeeEntity employeeEntity : employeeList) {
+			Employee emp=new Employee();
+			emp.setId(employeeEntity.getId());
+			emp.setName(employeeEntity.getName());
+			emp.setEmail(employeeEntity.getEmail());
+			emp.setPhone(employeeEntity.getPhone());
+			employee.add(emp);
+		}
+		return employee;
+	}
+
+	//delete
+	@Override
+	public boolean deleteEmployee(Long id) {
+		EmployeeEntity emp=employeeRepository.findById(id).get();
+		employeeRepository.delete(emp);
+		return true;
+	}
+
+	//update
+	@Override
+	public String updateEmployee(Long id, Employee employee) {
+		EmployeeEntity existingEmp=employeeRepository.findById(id).get();
+		existingEmp.setEmail(employee.getEmail());
+		existingEmp.setName(employee.getName());
+		existingEmp.setPhone(employee.getPhone());
+		employeeRepository.save(existingEmp);
+		return "Update Successfully";
+	}
+
+	
+	//get emp by id
+	@Override
+	public Employee readEmployee(Long id) {
+		EmployeeEntity employeeEntity=employeeRepository.findById(id).get();
+		Employee employee=new Employee();
+		BeanUtils.copyProperties(employeeEntity, employee);
+		return employee;
+	}
+
+}
+
+//repository
+package com.app.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.entity.EmployeeEntity;
+
+public interface EmployeeRepository  extends JpaRepository<EmployeeEntity, Long>{
+
+}
+
+//entity
+
+package com.app.entity;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name="emp_db")
+public class EmployeeEntity {
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private Long id;
+	
+	private String name;
+	private String phone;
+	private String email;
+	
+	
+}
+
